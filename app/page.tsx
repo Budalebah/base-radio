@@ -11,6 +11,11 @@ import {
 } from './radio';
 import { baseRadioContract } from './calls';
 import { 
+  fetchLeaderboard, 
+  LeaderboardData, 
+  truncateAddress 
+} from './leaderboard';
+import { 
   Transaction, 
   TransactionButton, 
   TransactionStatus, 
@@ -19,11 +24,13 @@ import {
 } from '@coinbase/onchainkit/transaction';
 import { ConnectWallet, Wallet, WalletDropdown, WalletDropdownDisconnect } from '@coinbase/onchainkit/wallet';
 import { Address, Avatar, Name, Identity, EthBalance } from '@coinbase/onchainkit/identity';
-import { Play, Pause, Music2, Activity, Search, X, Loader2 } from 'lucide-react';
+import { Play, Pause, Music2, Activity, Search, X, Loader2, Trophy, Radio, Users } from 'lucide-react';
 import { useAccount } from 'wagmi';
 import type { ContractFunctionParameters } from 'viem';
 
 const STATIONS_PER_PAGE = 20;
+
+type TabType = 'radio' | 'leaderboard';
 
 export default function Home() {
   const [stations, setStations] = useState<RadioStation[]>([]);
@@ -35,6 +42,9 @@ export default function Home() {
   const [isSearching, setIsSearching] = useState(false);
   const [hasMore, setHasMore] = useState(true);
   const [offset, setOffset] = useState(0);
+  const [activeTab, setActiveTab] = useState<TabType>('radio');
+  const [leaderboard, setLeaderboard] = useState<LeaderboardData | null>(null);
+  const [loadingLeaderboard, setLoadingLeaderboard] = useState(false);
   
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -81,6 +91,20 @@ export default function Home() {
   useEffect(() => {
     fetchStations(selectedCategory, true);
   }, [selectedCategory]);
+
+  // Fetch leaderboard when tab changes
+  useEffect(() => {
+    if (activeTab === 'leaderboard' && !leaderboard) {
+      loadLeaderboard();
+    }
+  }, [activeTab]);
+
+  const loadLeaderboard = async () => {
+    setLoadingLeaderboard(true);
+    const data = await fetchLeaderboard();
+    setLeaderboard(data);
+    setLoadingLeaderboard(false);
+  };
 
   // Search handler with debounce
   const handleSearch = useCallback(async (query: string) => {
@@ -155,6 +179,13 @@ export default function Home() {
     ] as unknown as ContractFunctionParameters[];
   };
 
+  // Get station name from stations list or show truncated ID
+  const getStationName = (stationId: string): string => {
+    const station = stations.find(s => s.stationuuid === stationId);
+    if (station) return station.name;
+    return `${stationId.slice(0, 8)}...`;
+  };
+
   return (
     <main className="min-h-screen pb-20 max-w-md mx-auto px-4 pt-4">
       {/* Header & Wallet */}
@@ -183,155 +214,314 @@ export default function Home() {
         </Wallet>
       </header>
 
-      {/* Search Bar */}
-      <div className="relative mb-4">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
-        <input
-          type="text"
-          value={searchQuery}
-          onChange={(e) => handleSearch(e.target.value)}
-          placeholder="Search radio stations..."
-          className="w-full bg-gray-900 border border-gray-800 rounded-xl py-2.5 pl-10 pr-10 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-blue-500 transition-colors"
-        />
-        {searchQuery && (
-          <button
-            onClick={clearSearch}
-            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-white"
-          >
-            <X className="w-4 h-4" />
-          </button>
-        )}
-      </div>
-
-      {/* Category Pills */}
-      <div className="flex gap-2 overflow-x-auto pb-3 mb-4 scrollbar-hide">
-        {CATEGORIES.map((category) => (
-          <button
-            key={category.id}
-            onClick={() => handleCategoryChange(category.id)}
-            className={`
-              flex-shrink-0 px-3 py-1.5 rounded-full text-sm font-medium transition-all
-              ${selectedCategory === category.id && !isSearching
-                ? 'bg-blue-500 text-white'
-                : 'bg-gray-800 text-gray-400 hover:bg-gray-700 hover:text-white'}
-            `}
-          >
-            {category.emoji} {category.label}
-          </button>
-        ))}
+      {/* Tab Navigation */}
+      <div className="flex gap-2 mb-4">
+        <button
+          onClick={() => setActiveTab('radio')}
+          className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-medium transition-all ${
+            activeTab === 'radio'
+              ? 'bg-blue-500 text-white'
+              : 'bg-gray-800 text-gray-400 hover:bg-gray-700'
+          }`}
+        >
+          <Radio className="w-4 h-4" />
+          Radio
+        </button>
+        <button
+          onClick={() => setActiveTab('leaderboard')}
+          className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-medium transition-all ${
+            activeTab === 'leaderboard'
+              ? 'bg-blue-500 text-white'
+              : 'bg-gray-800 text-gray-400 hover:bg-gray-700'
+          }`}
+        >
+          <Trophy className="w-4 h-4" />
+          Leaderboard
+        </button>
       </div>
 
       <audio ref={audioRef} className="hidden" />
 
-      {/* Stations List */}
-      {loading ? (
-        <div className="flex flex-col items-center justify-center h-48 gap-4 text-gray-400">
-          <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
-          <p>Loading stations...</p>
-        </div>
-      ) : stations.length === 0 ? (
-        <div className="flex flex-col items-center justify-center h-48 gap-4 text-gray-400">
-          <Music2 className="w-12 h-12 opacity-50" />
-          <p>No stations found</p>
-          {isSearching && (
-            <button
-              onClick={clearSearch}
-              className="text-blue-400 hover:text-blue-300 text-sm"
-            >
-              Clear search
-            </button>
-          )}
-        </div>
-      ) : (
-        <div className="space-y-3">
-          {stations.map((station) => (
-            <div 
-              key={station.stationuuid}
-              className={`
-                relative p-3 rounded-xl border border-gray-800 bg-gray-900/50 backdrop-blur-sm
-                transition-all duration-200
-                ${playingStation === station.stationuuid ? 'border-blue-500/50 ring-1 ring-blue-500/20' : 'hover:border-gray-700'}
-              `}
-            >
-              <div className="flex items-center gap-3">
-                {/* Play/Pause Button */}
+      {/* Radio Tab */}
+      {activeTab === 'radio' && (
+        <>
+          {/* Search Bar */}
+          <div className="relative mb-4">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => handleSearch(e.target.value)}
+              placeholder="Search radio stations..."
+              className="w-full bg-gray-900 border border-gray-800 rounded-xl py-2.5 pl-10 pr-10 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-blue-500 transition-colors"
+            />
+            {searchQuery && (
+              <button
+                onClick={clearSearch}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-white"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            )}
+          </div>
+
+          {/* Category Pills */}
+          <div className="flex gap-2 overflow-x-auto pb-3 mb-4 scrollbar-hide">
+            {CATEGORIES.map((category) => (
+              <button
+                key={category.id}
+                onClick={() => handleCategoryChange(category.id)}
+                className={`
+                  flex-shrink-0 px-3 py-1.5 rounded-full text-sm font-medium transition-all
+                  ${selectedCategory === category.id && !isSearching
+                    ? 'bg-blue-500 text-white'
+                    : 'bg-gray-800 text-gray-400 hover:bg-gray-700 hover:text-white'}
+                `}
+              >
+                {category.emoji} {category.label}
+              </button>
+            ))}
+          </div>
+
+          {/* Stations List */}
+          {loading ? (
+            <div className="flex flex-col items-center justify-center h-48 gap-4 text-gray-400">
+              <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
+              <p>Loading stations...</p>
+            </div>
+          ) : stations.length === 0 ? (
+            <div className="flex flex-col items-center justify-center h-48 gap-4 text-gray-400">
+              <Music2 className="w-12 h-12 opacity-50" />
+              <p>No stations found</p>
+              {isSearching && (
                 <button
-                  onClick={() => togglePlay(station)}
+                  onClick={clearSearch}
+                  className="text-blue-400 hover:text-blue-300 text-sm"
+                >
+                  Clear search
+                </button>
+              )}
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {stations.map((station) => (
+                <div 
+                  key={station.stationuuid}
                   className={`
-                    flex-shrink-0 w-11 h-11 rounded-full flex items-center justify-center
-                    transition-colors
-                    ${playingStation === station.stationuuid 
-                      ? 'bg-blue-500 text-white' 
-                      : 'bg-gray-800 text-gray-300 hover:bg-gray-700'}
+                    relative p-3 rounded-xl border border-gray-800 bg-gray-900/50 backdrop-blur-sm
+                    transition-all duration-200
+                    ${playingStation === station.stationuuid ? 'border-blue-500/50 ring-1 ring-blue-500/20' : 'hover:border-gray-700'}
                   `}
                 >
-                  {playingStation === station.stationuuid ? (
-                    <Pause className="w-5 h-5 fill-current" />
-                  ) : (
-                    <Play className="w-5 h-5 fill-current ml-0.5" />
-                  )}
-                </button>
+                  <div className="flex items-center gap-3">
+                    {/* Play/Pause Button */}
+                    <button
+                      onClick={() => togglePlay(station)}
+                      className={`
+                        flex-shrink-0 w-11 h-11 rounded-full flex items-center justify-center
+                        transition-colors
+                        ${playingStation === station.stationuuid 
+                          ? 'bg-blue-500 text-white' 
+                          : 'bg-gray-800 text-gray-300 hover:bg-gray-700'}
+                      `}
+                    >
+                      {playingStation === station.stationuuid ? (
+                        <Pause className="w-5 h-5 fill-current" />
+                      ) : (
+                        <Play className="w-5 h-5 fill-current ml-0.5" />
+                      )}
+                    </button>
 
-                {/* Info */}
-                <div className="flex-1 min-w-0">
-                  <h3 className="font-medium text-white text-sm truncate">
-                    {station.name}
-                  </h3>
-                  <div className="flex flex-wrap gap-1.5 mt-1 text-xs text-gray-500">
-                    {station.country && (
-                      <span className="bg-gray-800/80 px-1.5 py-0.5 rounded">
-                        {station.country}
-                      </span>
-                    )}
-                    {station.tags?.split(',').slice(0, 2).map(tag => (
-                      <span key={tag} className="bg-gray-800/80 px-1.5 py-0.5 rounded truncate max-w-[70px]">
-                        #{tag.trim()}
-                      </span>
-                    ))}
+                    {/* Info */}
+                    <div className="flex-1 min-w-0">
+                      <h3 className="font-medium text-white text-sm truncate">
+                        {station.name}
+                      </h3>
+                      <div className="flex flex-wrap gap-1.5 mt-1 text-xs text-gray-500">
+                        {station.country && (
+                          <span className="bg-gray-800/80 px-1.5 py-0.5 rounded">
+                            {station.country}
+                          </span>
+                        )}
+                        {station.tags?.split(',').slice(0, 2).map(tag => (
+                          <span key={tag} className="bg-gray-800/80 px-1.5 py-0.5 rounded truncate max-w-[70px]">
+                            #{tag.trim()}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Visualizer and Ping Button */}
+                    <div className="flex-shrink-0 flex items-center gap-2">
+                      {playingStation === station.stationuuid && (
+                        <Activity className="w-5 h-5 text-blue-400 animate-pulse" />
+                      )}
+                      <Transaction
+                        chainId={8453}
+                        contracts={createCalls(station.stationuuid)}
+                        onError={(err) => console.error('Transaction error:', err)}
+                        onSuccess={(response) => {
+                          console.log('Transaction successful', response);
+                          // Refresh leaderboard after successful ping
+                          if (leaderboard) {
+                            loadLeaderboard();
+                          }
+                        }}
+                      >
+                        <TransactionButton 
+                          className="!bg-blue-600 hover:!bg-blue-500 !text-xs !px-2.5 !py-1.5 !rounded-lg !border-0 !text-white !min-w-0 !h-auto !font-medium"
+                          text="🔵 Ping" 
+                        />
+                        <TransactionStatus>
+                          <TransactionStatusLabel />
+                          <TransactionStatusAction />
+                        </TransactionStatus>
+                      </Transaction>
+                    </div>
                   </div>
                 </div>
+              ))}
 
-                {/* Visualizer and Ping Button */}
-                <div className="flex-shrink-0 flex items-center gap-2">
-                  {playingStation === station.stationuuid && (
-                    <Activity className="w-5 h-5 text-blue-400 animate-pulse" />
+              {/* Load More Button */}
+              {hasMore && !isSearching && (
+                <button
+                  onClick={loadMore}
+                  disabled={loadingMore}
+                  className="w-full py-3 mt-4 bg-gray-800 hover:bg-gray-700 text-gray-300 rounded-xl text-sm font-medium transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+                >
+                  {loadingMore ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      Loading...
+                    </>
+                  ) : (
+                    'Load More Stations'
                   )}
-                  <Transaction
-                    chainId={8453}
-                    contracts={createCalls(station.stationuuid)}
-                    onError={(err) => console.error('Transaction error:', err)}
-                    onSuccess={(response) => console.log('Transaction successful', response)}
-                  >
-                    <TransactionButton 
-                      className="!bg-blue-600 hover:!bg-blue-500 !text-xs !px-2.5 !py-1.5 !rounded-lg !border-0 !text-white !min-w-0 !h-auto !font-medium"
-                      text="🔵 Ping" 
-                    />
-                    <TransactionStatus>
-                      <TransactionStatusLabel />
-                      <TransactionStatusAction />
-                    </TransactionStatus>
-                  </Transaction>
-                </div>
-              </div>
-            </div>
-          ))}
-
-          {/* Load More Button */}
-          {hasMore && !isSearching && (
-            <button
-              onClick={loadMore}
-              disabled={loadingMore}
-              className="w-full py-3 mt-4 bg-gray-800 hover:bg-gray-700 text-gray-300 rounded-xl text-sm font-medium transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
-            >
-              {loadingMore ? (
-                <>
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  Loading...
-                </>
-              ) : (
-                'Load More Stations'
+                </button>
               )}
-            </button>
+            </div>
+          )}
+        </>
+      )}
+
+      {/* Leaderboard Tab */}
+      {activeTab === 'leaderboard' && (
+        <div className="space-y-6">
+          {loadingLeaderboard ? (
+            <div className="flex flex-col items-center justify-center h-48 gap-4 text-gray-400">
+              <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
+              <p>Loading leaderboard...</p>
+            </div>
+          ) : leaderboard ? (
+            <>
+              {/* Total Pings */}
+              <div className="text-center p-4 bg-gradient-to-r from-blue-500/20 to-purple-500/20 rounded-xl border border-blue-500/30">
+                <p className="text-gray-400 text-sm">Total On-chain Pings</p>
+                <p className="text-3xl font-bold text-white mt-1">{leaderboard.totalPings}</p>
+              </div>
+
+              {/* Top Stations */}
+              <div>
+                <div className="flex items-center gap-2 mb-3">
+                  <Radio className="w-5 h-5 text-blue-400" />
+                  <h2 className="text-lg font-semibold text-white">Top Stations</h2>
+                </div>
+                {leaderboard.topStations.length === 0 ? (
+                  <p className="text-gray-500 text-center py-8">No pings yet. Be the first!</p>
+                ) : (
+                  <div className="space-y-2">
+                    {leaderboard.topStations.map((entry, index) => (
+                      <div
+                        key={entry.stationId}
+                        className="flex items-center gap-3 p-3 bg-gray-900/50 rounded-xl border border-gray-800"
+                      >
+                        <div className={`
+                          w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold
+                          ${index === 0 ? 'bg-yellow-500 text-black' : 
+                            index === 1 ? 'bg-gray-300 text-black' : 
+                            index === 2 ? 'bg-amber-600 text-white' : 
+                            'bg-gray-700 text-gray-300'}
+                        `}>
+                          {index + 1}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-white text-sm font-medium truncate">
+                            {getStationName(entry.stationId)}
+                          </p>
+                          <p className="text-gray-500 text-xs">
+                            ID: {entry.stationId.slice(0, 8)}...
+                          </p>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-blue-400 font-bold">{entry.pingCount}</p>
+                          <p className="text-gray-500 text-xs">pings</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Top Listeners */}
+              <div>
+                <div className="flex items-center gap-2 mb-3">
+                  <Users className="w-5 h-5 text-purple-400" />
+                  <h2 className="text-lg font-semibold text-white">Top Listeners</h2>
+                </div>
+                {leaderboard.topListeners.length === 0 ? (
+                  <p className="text-gray-500 text-center py-8">No listeners yet. Be the first!</p>
+                ) : (
+                  <div className="space-y-2">
+                    {leaderboard.topListeners.map((entry, index) => (
+                      <div
+                        key={entry.address}
+                        className="flex items-center gap-3 p-3 bg-gray-900/50 rounded-xl border border-gray-800"
+                      >
+                        <div className={`
+                          w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold
+                          ${index === 0 ? 'bg-yellow-500 text-black' : 
+                            index === 1 ? 'bg-gray-300 text-black' : 
+                            index === 2 ? 'bg-amber-600 text-white' : 
+                            'bg-gray-700 text-gray-300'}
+                        `}>
+                          {index + 1}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-white text-sm font-medium font-mono">
+                            {truncateAddress(entry.address)}
+                          </p>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-purple-400 font-bold">{entry.pingCount}</p>
+                          <p className="text-gray-500 text-xs">pings</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Refresh Button */}
+              <button
+                onClick={loadLeaderboard}
+                disabled={loadingLeaderboard}
+                className="w-full py-3 bg-gray-800 hover:bg-gray-700 text-gray-300 rounded-xl text-sm font-medium transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+              >
+                <Loader2 className={`w-4 h-4 ${loadingLeaderboard ? 'animate-spin' : ''}`} />
+                Refresh Leaderboard
+              </button>
+            </>
+          ) : (
+            <div className="flex flex-col items-center justify-center h-48 gap-4 text-gray-400">
+              <Trophy className="w-12 h-12 opacity-50" />
+              <p>Failed to load leaderboard</p>
+              <button
+                onClick={loadLeaderboard}
+                className="text-blue-400 hover:text-blue-300 text-sm"
+              >
+                Try again
+              </button>
+            </div>
           )}
         </div>
       )}
