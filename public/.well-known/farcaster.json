@@ -4,15 +4,22 @@
     "payload": "eyJkb21haW4iOiJiYXNlLW51LXRlbi52ZXJjZWwuYXBwIn0",
     "signature": "h4Rgd8xgvuJbSXl+98UttFy6SnASo+sXmAmYuTXQHQc3bUHhWKQHy73WL09IP6MdNLhUmY/s0usdxkqxHv/Ifhw="
   },
-  "frame": {
+  "miniapp": {
     "version": "1",
     "name": "Base Radio",
     "iconUrl": "https://base-nu-ten.vercel.app/icon.png",
     "homeUrl": "https://base-nu-ten.vercel.app",
-    "imageUrl": "https://base-nu-ten.vercel.app/splash.png",
-    "buttonTitle": "Listen Radio",
-    "splashImageUrl": "https://base-nu-ten.vercel.app/splash.png",
+    "splashImageUrl": "https://base-nu-ten.vercel.app/icon.png",
     "splashBackgroundColor": "#000000",
-    "webhookUrl": "https://base-nu-ten.vercel.app/api/webhook"
+    "subtitle": "Lofi radio on Base",
+    "description": "Listen to lofi radio stations and ping your favorites onchain on Base.",
+    "primaryCategory": "music",
+    "tags": ["radio", "lofi", "base", "onchain", "music"],
+    "heroImageUrl": "https://base-nu-ten.vercel.app/splash.png",
+    "tagline": "Free listen, onchain ping",
+    "ogTitle": "Base Radio",
+    "ogDescription": "Listen to lofi radio and ping stations on Base",
+    "ogImageUrl": "https://base-nu-ten.vercel.app/splash.png",
+    "requiredChains": ["eip155:8453"]
   }
 }
