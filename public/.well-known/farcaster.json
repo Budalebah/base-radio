@@ -4,6 +4,9 @@
     "payload": "eyJkb21haW4iOiJiYXNlLW51LXRlbi52ZXJjZWwuYXBwIn0",
     "signature": "h4Rgd8xgvuJbSXl+98UttFy6SnASo+sXmAmYuTXQHQc3bUHhWKQHy73WL09IP6MdNLhUmY/s0usdxkqxHv/Ifhw="
   },
+  "baseBuilder": {
+    "ownerAddress": "0xF8143F9F615E45b7dB423608D8F6aa376d9F01Dc"
+  },
   "miniapp": {
     "version": "1",
     "name": "Base Radio",
