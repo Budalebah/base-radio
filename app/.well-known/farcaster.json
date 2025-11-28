@@ -1,19 +1,18 @@
 {
   "accountAssociation": {
     "header": "eyJmaWQiOjE1ODkzLCJ0eXBlIjoiY3VzdG9keSIsImtleSI6IjB4Nzg4MjlDNjA1MjUzNTMyOTgyQjAwQzgyMThCNmZlNTY1MTRhNDFBNyJ9",
-    "payload": "eyJkb21haW4iOiJleGFtcGxlLmNvbSJ9",
+    "payload": "eyJkb21haW4iOiJiYXNlLWQzMTcxcXFpci1idWRhbGViYWhzLXByb2plY3RzLnZlcmNlbC5hcHAifQ",
     "signature": "MHgyYjJj..."
   },
   "frame": {
     "version": "1",
     "name": "Base Radio",
-    "iconUrl": "https://raw.githubusercontent.com/voderl/base-radio/main/public/icon.png",
-    "homeUrl": "https://your-app-url.vercel.app",
-    "imageUrl": "https://raw.githubusercontent.com/voderl/base-radio/main/public/splash.png",
+    "iconUrl": "https://raw.githubusercontent.com/Budalebah/base-radio/main/public/icon.png",
+    "homeUrl": "https://base-d3171qqir-budalebahs-projects.vercel.app",
+    "imageUrl": "https://raw.githubusercontent.com/Budalebah/base-radio/main/public/splash.png",
     "buttonTitle": "Listen Radio",
-    "splashImageUrl": "https://raw.githubusercontent.com/voderl/base-radio/main/public/splash.png",
+    "splashImageUrl": "https://raw.githubusercontent.com/Budalebah/base-radio/main/public/splash.png",
     "splashBackgroundColor": "#000000",
-    "webhookUrl": "https://your-app-url.vercel.app/api/webhook"
+    "webhookUrl": "https://base-d3171qqir-budalebahs-projects.vercel.app/api/webhook"
   }
 }
-
