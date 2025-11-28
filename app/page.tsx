@@ -13,7 +13,7 @@ import {
 } from '@coinbase/onchainkit/transaction';
 import { ConnectWallet, Wallet, WalletDropdown, WalletDropdownDisconnect } from '@coinbase/onchainkit/wallet';
 import { Address, Avatar, Name, Identity, EthBalance } from '@coinbase/onchainkit/identity';
-import { Play, Pause, Radio, Music2, Activity } from 'lucide-react';
+import { Play, Pause, Music2, Activity } from 'lucide-react';
 import { useAccount } from 'wagmi';
 import type { ContractFunctionParameters } from 'viem';
 
@@ -75,7 +75,7 @@ export default function Home() {
       {/* Header & Wallet */}
       <header className="flex justify-between items-center mb-8">
         <div className="flex items-center gap-2">
-          <Radio className="w-6 h-6 text-blue-500" />
+          <img src="/icon.png" alt="Base Radio" className="w-8 h-8 rounded-lg" />
           <h1 className="text-xl font-bold bg-gradient-to-r from-blue-400 to-purple-500 bg-clip-text text-transparent">
             Base Radio
           </h1>
