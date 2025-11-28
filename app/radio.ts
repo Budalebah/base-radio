@@ -22,16 +22,40 @@ export const CATEGORIES = [
 
 export type CategoryId = typeof CATEGORIES[number]['id'];
 
+// More reliable API servers with fallback
 const API_SERVERS = [
   'https://de1.api.radio-browser.info',
-  'https://nl1.api.radio-browser.info',
-  'https://at1.api.radio-browser.info',
+  'https://de2.api.radio-browser.info', 
+  'https://fi1.api.radio-browser.info',
 ];
 
-async function getApiServer(): Promise<string> {
-  // Try to get a random working server
-  const server = API_SERVERS[Math.floor(Math.random() * API_SERVERS.length)];
-  return server;
+async function fetchWithFallback(path: string): Promise<Response> {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 8000);
+
+  // Try each server until one works
+  for (let i = 0; i < API_SERVERS.length; i++) {
+    const server = API_SERVERS[i];
+    try {
+      const res = await fetch(`${server}${path}`, {
+        signal: controller.signal,
+        headers: {
+          'User-Agent': 'BaseRadio/1.0',
+        },
+      });
+      
+      if (res.ok) {
+        clearTimeout(timeoutId);
+        return res;
+      }
+    } catch (error) {
+      console.warn(`Server ${server} failed, trying next...`);
+      // Continue to next server
+    }
+  }
+
+  clearTimeout(timeoutId);
+  throw new Error('All API servers failed');
 }
 
 export async function fetchStationsByCategory(
@@ -39,28 +63,11 @@ export async function fetchStationsByCategory(
   limit: number = 20,
   offset: number = 0
 ): Promise<RadioStation[]> {
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 8000);
-
   try {
-    const server = await getApiServer();
-    const res = await fetch(
-      `${server}/json/stations/search?tag=${category}&limit=${limit}&offset=${offset}&hidebroken=true&order=votes&reverse=true`,
-      {
-        signal: controller.signal,
-        headers: {
-          'User-Agent': 'BaseRadio/1.0',
-        },
-      }
-    );
-    clearTimeout(timeoutId);
-
-    if (!res.ok) {
-      throw new Error('Failed to fetch stations');
-    }
+    const path = `/json/stations/search?tag=${category}&limit=${limit}&offset=${offset}&hidebroken=true&order=votes&reverse=true`;
+    const res = await fetchWithFallback(path);
     return res.json();
   } catch (error) {
-    clearTimeout(timeoutId);
     console.error('Radio fetch error:', error);
     return [];
   }
@@ -72,28 +79,11 @@ export async function searchStations(
 ): Promise<RadioStation[]> {
   if (!query.trim()) return [];
 
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 8000);
-
   try {
-    const server = await getApiServer();
-    const res = await fetch(
-      `${server}/json/stations/search?name=${encodeURIComponent(query)}&limit=${limit}&hidebroken=true&order=votes&reverse=true`,
-      {
-        signal: controller.signal,
-        headers: {
-          'User-Agent': 'BaseRadio/1.0',
-        },
-      }
-    );
-    clearTimeout(timeoutId);
-
-    if (!res.ok) {
-      throw new Error('Failed to search stations');
-    }
+    const path = `/json/stations/search?name=${encodeURIComponent(query)}&limit=${limit}&hidebroken=true&order=votes&reverse=true`;
+    const res = await fetchWithFallback(path);
     return res.json();
   } catch (error) {
-    clearTimeout(timeoutId);
     console.error('Radio search error:', error);
     return [];
   }
