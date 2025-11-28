@@ -1,11 +1,22 @@
-import { createPublicClient, http, parseAbiItem } from 'viem';
+import { createPublicClient, http, parseAbiItem, fallback } from 'viem';
 import { base } from 'viem/chains';
 import { baseRadioContract } from './calls';
 
-// Public client for reading from Base
+// Multiple RPC endpoints for reliability
+const RPC_ENDPOINTS = [
+  'https://base.llamarpc.com',
+  'https://base.drpc.org',
+  'https://base-mainnet.public.blastapi.io',
+  'https://1rpc.io/base',
+  'https://mainnet.base.org',
+];
+
+// Public client with fallback transports for reliability
 const publicClient = createPublicClient({
   chain: base,
-  transport: http(),
+  transport: fallback(
+    RPC_ENDPOINTS.map(url => http(url, { timeout: 10000 }))
+  ),
 });
 
 export interface StationLeaderboardEntry {
