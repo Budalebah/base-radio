@@ -291,27 +291,26 @@ export default function Home() {
                   </div>
                 </div>
 
-                {/* Visualizer or Ping Button */}
-                <div className="flex-shrink-0">
-                  {playingStation === station.stationuuid ? (
+                {/* Visualizer and Ping Button */}
+                <div className="flex-shrink-0 flex items-center gap-2">
+                  {playingStation === station.stationuuid && (
                     <Activity className="w-5 h-5 text-blue-400 animate-pulse" />
-                  ) : address ? (
-                    <Transaction
-                      chainId={8453}
-                      contracts={createCalls(station.stationuuid)}
-                      onError={(err) => console.error('Transaction error:', err)}
-                      onSuccess={(response) => console.log('Transaction successful', response)}
-                    >
-                      <TransactionButton 
-                        className="!bg-gray-800 hover:!bg-gray-700 !text-xs !px-2 !py-1 !rounded-md !border !border-gray-700 !text-gray-400 !min-w-0 !h-auto"
-                        text="🔵" 
-                      />
-                      <TransactionStatus>
-                        <TransactionStatusLabel />
-                        <TransactionStatusAction />
-                      </TransactionStatus>
-                    </Transaction>
-                  ) : null}
+                  )}
+                  <Transaction
+                    chainId={8453}
+                    contracts={createCalls(station.stationuuid)}
+                    onError={(err) => console.error('Transaction error:', err)}
+                    onSuccess={(response) => console.log('Transaction successful', response)}
+                  >
+                    <TransactionButton 
+                      className="!bg-blue-600 hover:!bg-blue-500 !text-xs !px-2.5 !py-1.5 !rounded-lg !border-0 !text-white !min-w-0 !h-auto !font-medium"
+                      text="🔵 Ping" 
+                    />
+                    <TransactionStatus>
+                      <TransactionStatusLabel />
+                      <TransactionStatusAction />
+                    </TransactionStatus>
+                  </Transaction>
                 </div>
               </div>
             </div>
