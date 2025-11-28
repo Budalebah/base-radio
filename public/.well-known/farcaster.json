@@ -1,0 +1,18 @@
+{
+  "accountAssociation": {
+    "header": "eyJmaWQiOjE1ODkzLCJ0eXBlIjoiY3VzdG9keSIsImtleSI6IjB4Nzg4MjlDNjA1MjUzNTMyOTgyQjAwQzgyMThCNmZlNTY1MTRhNDFBNyJ9",
+    "payload": "eyJkb21haW4iOiJiYXNlLW51LXRlbi52ZXJjZWwuYXBwIn0",
+    "signature": "MHgyYjJj..."
+  },
+  "frame": {
+    "version": "1",
+    "name": "Base Radio",
+    "iconUrl": "https://base-nu-ten.vercel.app/icon.png",
+    "homeUrl": "https://base-nu-ten.vercel.app",
+    "imageUrl": "https://base-nu-ten.vercel.app/splash.png",
+    "buttonTitle": "Listen Radio",
+    "splashImageUrl": "https://base-nu-ten.vercel.app/splash.png",
+    "splashBackgroundColor": "#000000",
+    "webhookUrl": "https://base-nu-ten.vercel.app/api/webhook"
+  }
+}
